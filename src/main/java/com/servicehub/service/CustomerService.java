@@ -2,6 +2,7 @@ package com.servicehub.service;
 
 import com.servicehub.dto.CustomerLoginDTO;
 import com.servicehub.exception.CustomerNotFoundException;
+import com.servicehub.exception.InvalidCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.servicehub.repository.CustomerRepository;
@@ -81,7 +82,7 @@ public class CustomerService {
         if (!passwordEncoder.matches(
                 loginDTO.getPassword(), customer.getPassword())) {
 
-            throw new RuntimeException("Invalid email or password");
+            throw new InvalidCredentialsException("Invalid email or password");
         }
         return customer;
     }

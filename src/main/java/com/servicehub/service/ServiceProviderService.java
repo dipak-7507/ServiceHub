@@ -7,6 +7,8 @@ import com.servicehub.entity.ServiceProvider;
 import com.servicehub.repository.ServiceCategoryRepository;
 import com.servicehub.repository.ServiceProviderRepository;
 import com.servicehub.exception.ProviderNotFoundException;
+import com.servicehub.exception.CategoryNotFoundException;
+import com.servicehub.exception.InvalidCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -32,7 +34,7 @@ public class ServiceProviderService {
         ServiceCategory category = serviceCategoryRepository
                 .findById(serviceProviderDTO.getCategoryId())
                 .orElseThrow(() ->
-                        new RuntimeException("Category not found"));
+                        new CategoryNotFoundException("Category not found"));
         ServiceProvider serviceProvider = new ServiceProvider();
 
         serviceProvider.setFirstName(serviceProviderDTO.getFirstName());
@@ -77,7 +79,7 @@ public class ServiceProviderService {
                 serviceCategoryRepository.findById(
                                 serviceProviderDTO.getCategoryId())
                         .orElseThrow(()->
-                                new RuntimeException("Category not found"));
+                                new CategoryNotFoundException("Category not found"));
         serviceProvider.setFirstName(serviceProviderDTO.getFirstName());
         serviceProvider.setLastName(serviceProviderDTO.getLastName());
         serviceProvider.setEmail(serviceProviderDTO.getEmail());
@@ -113,11 +115,11 @@ public class ServiceProviderService {
                 serviceProviderRepository
                         .findByEmail(loginDTO.getEmail())
                         .orElseThrow(()->
-                                new RuntimeException("Invalid email or password"));
+                                new InvalidCredentialsException("Invalid email or password"));
 
         if (!passwordEncoder.matches(
                 loginDTO.getPassword(), provider.getPassword())){
-            throw new RuntimeException("Invalid email or password");
+            throw new InvalidCredentialsException("Invalid email or password");
 
         }
         return provider;

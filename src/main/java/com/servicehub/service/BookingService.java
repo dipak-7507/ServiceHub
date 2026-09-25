@@ -3,9 +3,14 @@ package com.servicehub.service;
 import com.servicehub.dto.BookingDTO;
 import com.servicehub.entity.Customer;
 import com.servicehub.entity.ServiceProvider;
+import com.servicehub.exception.CustomerNotFoundException;
+import com.servicehub.exception.ProviderNotFoundException;
+import com.servicehub.exception.BookingNotFoundException;
 import com.servicehub.repository.BookingRepository;
 import com.servicehub.repository.CustomerRepository;
 import com.servicehub.repository.ServiceProviderRepository;
+
+
 import org.springframework.stereotype.Service;
 import com.servicehub.entity.Booking;
 
@@ -32,12 +37,12 @@ public class BookingService {
         Customer customer =customerRepository
                 .findById(bookingDTO.getCustomerId())
                 .orElseThrow(()->
-                        new RuntimeException("Customer not found"));
+                        new CustomerNotFoundException("Customer not found"));
 
         ServiceProvider provider = serviceProviderRepository
                 .findById(bookingDTO.getProviderId())
                 .orElseThrow(()->
-                        new RuntimeException("Provider not found"));
+                        new ProviderNotFoundException("Provider not found"));
 
         Booking booking = new Booking();
 
@@ -56,13 +61,13 @@ public class BookingService {
     public Booking getBookingById(Long id){
         return bookingRepository.findById(id)
                 .orElseThrow(()->
-                        new RuntimeException("Booking not found"));
+                        new BookingNotFoundException("Booking not found"));
 
     }
     public Booking updateBookingStatus(Long id, String status){
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(()->
-                        new RuntimeException("Booking not found"));
+                        new BookingNotFoundException("Booking not found"));
 
         booking.setStatus(status);
 
@@ -73,7 +78,7 @@ public class BookingService {
     public void deleteBooking(Long id){
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(()->
-                        new RuntimeException("Booking not found"));
+                        new BookingNotFoundException("Booking not found"));
 
         bookingRepository.delete(booking);
     }

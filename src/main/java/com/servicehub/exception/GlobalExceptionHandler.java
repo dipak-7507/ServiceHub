@@ -55,4 +55,20 @@ public class GlobalExceptionHandler {
                 .body(ex.getMessage());
     }
 
+    @ExceptionHandler(BookingNotFoundException.class)
+    public ResponseEntity<String> handleBookingNotFoundException(
+            BookingNotFoundException ex){
+        return ResponseEntity
+                .status(404)
+                .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<String> handleInvalidCredentialsException(
+            InvalidCredentialsException ex){
+        return ResponseEntity
+                .status(401)
+                .body(ex.getMessage());
+    }
+
 }
