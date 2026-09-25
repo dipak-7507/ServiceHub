@@ -1,4 +1,5 @@
 package com.servicehub.service;
+
 import com.servicehub.dto.ProviderLoginDTO;
 import com.servicehub.dto.ServiceProviderDTO;
 import com.servicehub.entity.ServiceCategory;
@@ -6,6 +7,7 @@ import com.servicehub.entity.ServiceProvider;
 import com.servicehub.repository.ServiceCategoryRepository;
 import com.servicehub.repository.ServiceProviderRepository;
 import com.servicehub.exception.ProviderNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.time.LocalDateTime;
@@ -14,13 +16,16 @@ import java.time.LocalDateTime;
 public class ServiceProviderService {
     private final ServiceProviderRepository serviceProviderRepository;
     private final ServiceCategoryRepository serviceCategoryRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public ServiceProviderService(
             ServiceProviderRepository serviceProviderRepository,
-            ServiceCategoryRepository serviceCategoryRepository) {
+            ServiceCategoryRepository serviceCategoryRepository,
+            PasswordEncoder passwordEncoder) {
 
         this.serviceProviderRepository = serviceProviderRepository;
         this.serviceCategoryRepository = serviceCategoryRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public ServiceProvider saveProvider(ServiceProviderDTO serviceProviderDTO) {
@@ -34,7 +39,8 @@ public class ServiceProviderService {
         serviceProvider.setLastName(serviceProviderDTO.getLastName());
         serviceProvider.setEmail(serviceProviderDTO.getEmail());
         serviceProvider.setMobileNumber(serviceProviderDTO.getMobileNumber());
-        serviceProvider.setPassword(serviceProviderDTO.getPassword());
+        serviceProvider.setPassword(
+                passwordEncoder.encode(serviceProviderDTO.getPassword()));
         serviceProvider.setExperience(serviceProviderDTO.getExperience());
         serviceProvider.setCity(serviceProviderDTO.getCity());
         serviceProvider.setAddress(serviceProviderDTO.getAddress());
@@ -69,14 +75,15 @@ public class ServiceProviderService {
 
         ServiceCategory category =
                 serviceCategoryRepository.findById(
-                        serviceProviderDTO.getCategoryId())
+                                serviceProviderDTO.getCategoryId())
                         .orElseThrow(()->
                                 new RuntimeException("Category not found"));
         serviceProvider.setFirstName(serviceProviderDTO.getFirstName());
         serviceProvider.setLastName(serviceProviderDTO.getLastName());
         serviceProvider.setEmail(serviceProviderDTO.getEmail());
         serviceProvider.setMobileNumber(serviceProviderDTO.getMobileNumber());
-        serviceProvider.setPassword(serviceProviderDTO.getPassword());
+        serviceProvider.setPassword(
+                passwordEncoder.encode(serviceProviderDTO.getPassword()));
         serviceProvider.setExperience(serviceProviderDTO.getExperience());
         serviceProvider.setCity(serviceProviderDTO.getCity());
         serviceProvider.setAddress(serviceProviderDTO.getAddress());
@@ -85,14 +92,16 @@ public class ServiceProviderService {
         return serviceProviderRepository.save(serviceProvider);
 
     }
-public void deleteProvider(Long id){
-ServiceProvider serviceProvider =
-    serviceProviderRepository.findById(id)
-            .orElseThrow(()->
-                    new ProviderNotFoundException( "Provider with id " + id + " not found"));
 
-     serviceProviderRepository.delete(serviceProvider);
+    public void deleteProvider(Long id){
+        ServiceProvider serviceProvider =
+                serviceProviderRepository.findById(id)
+                        .orElseThrow(()->
+                                new ProviderNotFoundException( "Provider with id " + id + " not found"));
+
+        serviceProviderRepository.delete(serviceProvider);
     }
+
     public List<ServiceProvider>getProviderByCategory(String categoryName){
         return serviceProviderRepository
                 .findByServiceCategoryCategoryName(categoryName);
@@ -106,8 +115,8 @@ ServiceProvider serviceProvider =
                         .orElseThrow(()->
                                 new RuntimeException("Invalid email or password"));
 
-        if (!provider.getPassword()
-                .equals(loginDTO.getPassword())){
+        if (!passwordEncoder.matches(
+                loginDTO.getPassword(), provider.getPassword())){
             throw new RuntimeException("Invalid email or password");
 
         }

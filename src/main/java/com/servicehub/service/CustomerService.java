@@ -2,6 +2,7 @@ package com.servicehub.service;
 
 import com.servicehub.dto.CustomerLoginDTO;
 import com.servicehub.exception.CustomerNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.servicehub.repository.CustomerRepository;
 import com.servicehub.entity.Customer;
@@ -10,70 +11,78 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final PasswordEncoder passwordEncoder;
 
+    public CustomerService(CustomerRepository customerRepository,
+                           PasswordEncoder passwordEncoder) {
 
-  public CustomerService(CustomerRepository customerRepository) {
+        this.customerRepository = customerRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
-    this.customerRepository = customerRepository;
-  }
-  public Customer saveCustomer(CustomerDTO customerDTO) {
+    public Customer saveCustomer(CustomerDTO customerDTO) {
 
-      Customer customer = new Customer();
+        Customer customer = new Customer();
 
-      customer.setFirstName(customerDTO.getFirstName());
-      customer.setLastName(customerDTO.getLastName());
-      customer.setEmail(customerDTO.getEmail());
-      customer.setMobileNumber(customerDTO.getMobileNumber());
-      customer.setPassword(customerDTO.getPassword());
+        customer.setFirstName(customerDTO.getFirstName());
+        customer.setLastName(customerDTO.getLastName());
+        customer.setEmail(customerDTO.getEmail());
+        customer.setMobileNumber(customerDTO.getMobileNumber());
+        customer.setPassword(
+                passwordEncoder.encode(customerDTO.getPassword()));
 
-      customer.setCreatedAt(LocalDateTime.now());
+        customer.setCreatedAt(LocalDateTime.now());
 
-      return customerRepository.save(customer);
-  }
-      public List<Customer> getAllCustomers(){
+        return customerRepository.save(customer);
+    }
 
-          return customerRepository.findAll();
-      }
-      public Customer getCustomerById(Long id){
-      return customerRepository.findById(id)
-              .orElseThrow(()->
-              new CustomerNotFoundException("Customer with id " + id + " not found"));
-      }
+    public List<Customer> getAllCustomers() {
 
-      public Customer updateCustomer(Long id, CustomerDTO customerDTO){
-      Customer customer = customerRepository.findById(id)
-              .orElseThrow(()-> new CustomerNotFoundException("Customer with id "+ id + " not found"));
+        return customerRepository.findAll();
+    }
 
-      customer.setFirstName(customerDTO.getFirstName());
-      customer.setLastName(customerDTO.getLastName());
-      customer.setEmail(customerDTO.getEmail());
-      customer.setMobileNumber(customerDTO.getMobileNumber());
-      customer.setPassword(customerDTO.getPassword());
+    public Customer getCustomerById(Long id) {
+        return customerRepository.findById(id)
+                .orElseThrow(() ->
+                        new CustomerNotFoundException("Customer with id " + id + " not found"));
+    }
 
-      return customerRepository.save(customer);
-      }
-      public void deleteCustomer(Long id){
-         Customer customer = customerRepository.findById(id)
-                 .orElseThrow(()->
-                         new CustomerNotFoundException("Customer with id " + id + " Not found "));
-         customerRepository.delete(customer);
-      }
+    public Customer updateCustomer(Long id, CustomerDTO customerDTO) {
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new CustomerNotFoundException("Customer with id " + id + " not found"));
 
-      public  Customer login(CustomerLoginDTO loginDTO){
+        customer.setFirstName(customerDTO.getFirstName());
+        customer.setLastName(customerDTO.getLastName());
+        customer.setEmail(customerDTO.getEmail());
+        customer.setMobileNumber(customerDTO.getMobileNumber());
+        customer.setPassword(
+                passwordEncoder.encode(customerDTO.getPassword()));
 
-      Customer customer = customerRepository
-              .findByEmail(loginDTO.getEmail())
-              .orElseThrow(()->
-                      new CustomerNotFoundException("Invalid email or password"));
-      if (!customer.getPassword().equals(loginDTO.getPassword())){
+        return customerRepository.save(customer);
+    }
 
-          throw new RuntimeException("Invalid email or password");
-      }
-      return customer;
-      }
+    public void deleteCustomer(Long id) {
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() ->
+                        new CustomerNotFoundException("Customer with id " + id + " Not found "));
+        customerRepository.delete(customer);
+    }
+
+    public Customer login(CustomerLoginDTO loginDTO) {
+
+        Customer customer = customerRepository
+                .findByEmail(loginDTO.getEmail())
+                .orElseThrow(() ->
+                        new CustomerNotFoundException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(
+                loginDTO.getPassword(), customer.getPassword())) {
+
+            throw new RuntimeException("Invalid email or password");
+        }
+        return customer;
+    }
 }
-
