@@ -70,5 +70,11 @@ public class GlobalExceptionHandler {
                 .status(401)
                 .body(ex.getMessage());
     }
-
+ @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<String> handleUnauthorizedAccessException(
+            UnauthorizedAccessException ex){
+        return ResponseEntity
+                .status(403)
+                .body(ex.getMessage());
+ }
 }

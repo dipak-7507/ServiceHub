@@ -2,7 +2,10 @@ package com.servicehub.controller;
 
 import com.servicehub.dto.CustomerLoginDTO;
 import com.servicehub.dto.CustomerDTO;
+import com.servicehub.dto.LoginResponseDTO;
+import com.servicehub.exception.UnauthorizedAccessException;
 import com.servicehub.service.CustomerService;
+import com.servicehub.security.JwtUtil;
 import jakarta.validation.Valid;
 import com.servicehub.entity.Customer;
 import java.util.List;
@@ -11,8 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import com.servicehub.security.JwtUtil;
-import com.servicehub.dto.LoginResponseDTO;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 
 
@@ -43,8 +45,17 @@ public class CustomerController {
 
     @GetMapping("/{id}")
     public Customer getCustomerById(@PathVariable Long id) {
+      Customer customer = customerService.getCustomerById(id);
 
-        return customerService.getCustomerById(id);
+      String loggedInEmail =
+              SecurityContextHolder.getContext()
+                      .getAuthentication().getName();
+
+      if(!customer.getEmail().equals(loggedInEmail)){
+          throw new UnauthorizedAccessException(
+                  "You are not allowed to access this customer's data");
+      }
+       return customer;
     }
 
     @PutMapping("/{id}")
@@ -53,12 +64,32 @@ public class CustomerController {
             @PathVariable Long id,
             @Valid @RequestBody CustomerDTO customerDTO
     ) {
+        Customer existing = customerService.getCustomerById(id);
+
+        String loggedInEmail = SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+
+        if(!existing.getEmail().equals(loggedInEmail)){
+            throw new UnauthorizedAccessException(
+                    "You are not allowed to access this customer's data");
+        }
         return customerService.updateCustomer(id, customerDTO);
     }
 
     @DeleteMapping("/{id}")
 
     public void deleteCustomer(@PathVariable Long id) {
+        Customer existing = customerService.getCustomerById(id);
+
+        String loggedInEmail =
+                SecurityContextHolder.getContext()
+                        .getAuthentication().getName();
+
+        if (!existing.getEmail().equals(loggedInEmail)) {
+            throw new UnauthorizedAccessException(
+                    "You are not allowed to delete this customer's data");
+        }
+
         customerService.deleteCustomer(id);
     }
 
