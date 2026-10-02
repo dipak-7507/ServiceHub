@@ -47,8 +47,6 @@ public class JwtAuthenticationFilter
 
             String email = jwtUtil.extractEmail(token);
 
-            System.out.println("Email : " + email);
-
 
             if (!jwtUtil.validateToken(token, email)) {
 
