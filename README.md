@@ -10,7 +10,7 @@ ServiceHub is a REST API for a business service management platform, built with 
 - Booking management (create, view, update status)
 - Feedback and rating system
 - JWT-based authentication
-- Role-based access — users can only view/update/delete their own data
+- Ownership-based authorization: users can only view/update/delete their own data
 - Swagger API documentation
 
 ## Tech Stack
