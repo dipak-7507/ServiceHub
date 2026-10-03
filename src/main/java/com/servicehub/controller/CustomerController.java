@@ -8,7 +8,6 @@ import com.servicehub.service.CustomerService;
 import com.servicehub.security.JwtUtil;
 import jakarta.validation.Valid;
 import com.servicehub.entity.Customer;
-import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,11 +35,6 @@ public class CustomerController {
     public Customer saveCustomer(@Valid @RequestBody CustomerDTO customerDTO) {
 
         return customerService.saveCustomer(customerDTO);
-    }
-
-    @GetMapping
-    public List<Customer> getAllCustomers() {
-        return customerService.getAllCustomers();
     }
 
     @GetMapping("/{id}")

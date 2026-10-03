@@ -77,4 +77,11 @@ public class GlobalExceptionHandler {
                 .status(403)
                 .body(ex.getMessage());
  }
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<String> handleDuplicate(
+            org.springframework.dao.DataIntegrityViolationException ex){
+        return ResponseEntity
+                .status(409)
+                .body("Email or mobile number already exists");
+    }
 }
