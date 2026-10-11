@@ -11,6 +11,8 @@ import com.servicehub.exception.UnauthorizedAccessException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.servicehub.security.JwtUtil;
 import com.servicehub.dto.LoginResponseDTO;
+import com.servicehub.security.Role;
+import com.servicehub.dto.ProviderSummaryDTO;
 
 @RestController
 @RequestMapping("/providers")
@@ -31,9 +33,11 @@ public class ServiceProviderController {
     }
 
     @GetMapping
-    public List<ServiceProvider> getAllProviders() {
+    public List<ProviderSummaryDTO> getAllProviders() {
 
-        return serviceProviderService.getAllProvider();
+        return serviceProviderService.getAllProvider().stream()
+                .map(ProviderSummaryDTO::from)
+                .toList();
     }
 
     @GetMapping("/{id}")
@@ -85,19 +89,21 @@ public class ServiceProviderController {
     }
 
     @GetMapping("/category/{categoryName}")
-    public List<ServiceProvider> getProviderByCategory(
+    public List<ProviderSummaryDTO> getProviderByCategory(
             @PathVariable String categoryName) {
         return serviceProviderService
-                .getProviderByCategory(categoryName);
+                .getProviderByCategory(categoryName).stream()
+                .map(ProviderSummaryDTO ::from)
+                .toList();
     }
 
 
     @PostMapping("/login")
     public LoginResponseDTO login(
-            @RequestBody ProviderLoginDTO loginDTO) {
+           @Valid @RequestBody ProviderLoginDTO loginDTO) {
         ServiceProvider provider = serviceProviderService.login(loginDTO);
 
-        String token = jwtUtil.generateToken(provider.getEmail());
+        String token = jwtUtil.generateToken(provider.getEmail(), Role.PROVIDER);
 
 
         return new LoginResponseDTO(token);

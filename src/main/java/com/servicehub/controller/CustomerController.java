@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.security.core.context.SecurityContextHolder;
-
+import com.servicehub.security.Role;
 
 
 @RestController
@@ -94,8 +94,7 @@ public class CustomerController {
       Customer customer =
               customerService.login(loginDTO);
 
-        String token =
-                jwtUtil.generateToken(customer.getEmail());
+        String token = jwtUtil.generateToken(customer.getEmail(), Role.CUSTOMER);
 
         return new LoginResponseDTO(token);
     }

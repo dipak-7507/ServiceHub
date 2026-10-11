@@ -77,11 +77,30 @@ public class GlobalExceptionHandler {
                 .status(403)
                 .body(ex.getMessage());
  }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<String> handleInvalidRequest(
+            InvalidRequestException ex){
+
+        return ResponseEntity
+                .status(400)
+                .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<String> handleConflict(
+            ConflictException ex){
+
+        return ResponseEntity
+                .status(409)
+                .body(ex.getMessage());
+    }
+
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     public ResponseEntity<String> handleDuplicate(
             org.springframework.dao.DataIntegrityViolationException ex){
         return ResponseEntity
                 .status(409)
-                .body("Email or mobile number already exists");
+                .body("A record with the same unique value already exists (email, mobile number or category name)");
     }
 }

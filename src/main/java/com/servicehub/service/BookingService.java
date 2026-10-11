@@ -2,17 +2,21 @@ package com.servicehub.service;
 
 import com.servicehub.dto.BookingDTO;
 import com.servicehub.entity.Booking;
+import com.servicehub.entity.BookingStatus;
 import com.servicehub.entity.Customer;
 import com.servicehub.entity.ServiceProvider;
 import com.servicehub.exception.BookingNotFoundException;
+import com.servicehub.exception.ConflictException;
 import com.servicehub.exception.CustomerNotFoundException;
+import com.servicehub.exception.InvalidRequestException;
 import com.servicehub.exception.ProviderNotFoundException;
 import com.servicehub.exception.UnauthorizedAccessException;
 import com.servicehub.repository.BookingRepository;
 import com.servicehub.repository.CustomerRepository;
 import com.servicehub.repository.ServiceProviderRepository;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.servicehub.security.SecurityUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -33,30 +37,40 @@ public class BookingService {
         this.serviceProviderRepository = serviceProviderRepository;
     }
 
-    private String getLoggedInEmail() {
-        return SecurityContextHolder.getContext()
-                .getAuthentication().getName();
+    // ---------- ownership helpers ----------
+
+    private boolean isBookingCustomer(Booking booking) {
+        return SecurityUtil.isLoggedInCustomer(booking.getCustomer().getEmail());
+    }
+
+    private boolean isBookingProvider(Booking booking) {
+        return SecurityUtil.isLoggedInProvider(booking.getServiceProvider().getEmail());
     }
 
     private void checkBookingAccess(Booking booking) {
-        String email = getLoggedInEmail();
-
-        boolean isCustomer = booking.getCustomer().getEmail().equals(email);
-        boolean isProvider = booking.getServiceProvider().getEmail().equals(email);
-
-        if (!isCustomer && !isProvider) {
+        if (!isBookingCustomer(booking) && !isBookingProvider(booking)) {
             throw new UnauthorizedAccessException(
                     "You are not allowed to access this booking");
         }
     }
 
+    private Booking findBooking(Long id) {
+        return bookingRepository.findById(id)
+                .orElseThrow(() ->
+                        new BookingNotFoundException("Booking not found"));
+    }
+
+    // ---------- use cases ----------
+
+    @Transactional
     public Booking saveBooking(BookingDTO bookingDTO) {
         Customer customer = customerRepository
                 .findById(bookingDTO.getCustomerId())
                 .orElseThrow(() ->
                         new CustomerNotFoundException("Customer not found"));
 
-        if (!customer.getEmail().equals(getLoggedInEmail())) {
+        // a customer may only book for himself
+        if (!SecurityUtil.isLoggedInCustomer(customer.getEmail())) {
             throw new UnauthorizedAccessException(
                     "You can only create bookings for yourself");
         }
@@ -66,40 +80,81 @@ public class BookingService {
                 .orElseThrow(() ->
                         new ProviderNotFoundException("Provider not found"));
 
+        // rule 1: no bookings in the past
+        if (bookingDTO.getServiceDate().isBefore(LocalDate.now())) {
+            throw new InvalidRequestException(
+                    "Service date cannot be in the past");
+        }
+
+        // rule 2: a provider can have only one active booking per day
+        boolean providerBusy = bookingRepository
+                .existsByServiceProviderIdAndServiceDateAndStatusNot(
+                        bookingDTO.getProviderId(),
+                        bookingDTO.getServiceDate(),
+                        BookingStatus.CANCELLED);
+        if (providerBusy) {
+            throw new ConflictException(
+                    "Provider is already booked on this date");
+        }
+
         Booking booking = new Booking();
         booking.setCustomer(customer);
         booking.setServiceProvider(provider);
         booking.setServiceType(bookingDTO.getServiceType());
         booking.setBookingDate(LocalDate.now());
         booking.setServiceDate(bookingDTO.getServiceDate());
-        booking.setStatus("PENDING");
+        booking.setStatus(BookingStatus.PENDING);
 
         return bookingRepository.save(booking);
     }
 
     public Booking getBookingById(Long id) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() ->
-                        new BookingNotFoundException("Booking not found"));
+        Booking booking = findBooking(id);
         checkBookingAccess(booking);
         return booking;
     }
 
-    public Booking updateBookingStatus(Long id, String status) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() ->
-                        new BookingNotFoundException("Booking not found"));
+    @Transactional
+    public Booking updateBookingStatus(Long id, BookingStatus newStatus) {
+        Booking booking = findBooking(id);
         checkBookingAccess(booking);
 
-        booking.setStatus(status);
+        BookingStatus current = booking.getStatus();
+
+        if (isBookingProvider(booking)) {
+            if (!current.providerCanMoveTo(newStatus)) {
+                throw new InvalidRequestException(
+                        "Cannot change booking from " + current + " to " + newStatus);
+            }
+        } else {
+            // the logged-in user is the customer of this booking
+            if (newStatus != BookingStatus.CANCELLED) {
+                throw new UnauthorizedAccessException(
+                        "Customers can only cancel a booking");
+            }
+            if (!current.customerCanMoveTo(newStatus)) {
+                throw new InvalidRequestException(
+                        "Cannot change booking from " + current + " to " + newStatus);
+            }
+        }
+
+        booking.setStatus(newStatus);
         return bookingRepository.save(booking);
     }
 
+    @Transactional
     public void deleteBooking(Long id) {
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() ->
-                        new BookingNotFoundException("Booking not found"));
-        checkBookingAccess(booking);
+        Booking booking = findBooking(id);
+
+        // only the customer can delete, and only before the provider reacts
+        if (!isBookingCustomer(booking)) {
+            throw new UnauthorizedAccessException(
+                    "Only the customer can delete this booking");
+        }
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new InvalidRequestException(
+                    "Only a PENDING booking can be deleted. Cancel it instead.");
+        }
 
         bookingRepository.delete(booking);
     }
@@ -109,7 +164,7 @@ public class BookingService {
                 .orElseThrow(() ->
                         new CustomerNotFoundException("Customer not found"));
 
-        if (!customer.getEmail().equals(getLoggedInEmail())) {
+        if (!SecurityUtil.isLoggedInCustomer(customer.getEmail())) {
             throw new UnauthorizedAccessException(
                     "You are not allowed to access this customer's bookings");
         }
@@ -121,7 +176,7 @@ public class BookingService {
                 .orElseThrow(() ->
                         new ProviderNotFoundException("Provider not found"));
 
-        if (!provider.getEmail().equals(getLoggedInEmail())) {
+        if (!SecurityUtil.isLoggedInProvider(provider.getEmail())) {
             throw new UnauthorizedAccessException(
                     "You are not allowed to access this provider's bookings");
         }

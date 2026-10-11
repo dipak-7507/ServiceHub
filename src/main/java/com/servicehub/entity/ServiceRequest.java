@@ -16,7 +16,8 @@ public class ServiceRequest {
 
     private LocalDateTime requestDate;
 
-    private  String status;
+    @Enumerated(EnumType.STRING)
+    private  RequestStatus status;
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
@@ -41,7 +42,6 @@ public class ServiceRequest {
 
     public String getDescription(){
         return description;
-
     }
 
     public void setDescription(String description) {
@@ -56,11 +56,11 @@ public class ServiceRequest {
         this.requestDate = requestDate;
     }
 
-    public String getStatus() {
+    public  RequestStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(RequestStatus status) {
         this.status = status;
     }
 

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class ServiceRequestDTO {
+
     @NotBlank(message = "Description is Required")
     private String description;
 
@@ -13,9 +14,7 @@ public class ServiceRequestDTO {
     @NotNull(message = "Provider Id is Required")
     private Long providerId;
 
-
-    public ServiceRequestDTO(){
-
+    public ServiceRequestDTO() {
     }
 
     public String getDescription() {

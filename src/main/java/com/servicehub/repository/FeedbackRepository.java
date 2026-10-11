@@ -19,4 +19,6 @@ extends JpaRepository<Feedback , Long> {
 
     long countByServiceProviderId(Long providerId);
 
+    boolean existsByCustomerIdAndServiceProviderId(Long customerId, Long providerId);
+
 }

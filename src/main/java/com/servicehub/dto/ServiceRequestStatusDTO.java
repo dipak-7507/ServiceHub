@@ -1,22 +1,21 @@
 package com.servicehub.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import com.servicehub.entity.RequestStatus;
+import jakarta.validation.constraints.NotNull;
 
 public class ServiceRequestStatusDTO {
 
-    @NotBlank(message = "Status is required")
+    @NotNull(message = "Status is required")
+    private RequestStatus status;
 
-    private String status;
-
-    public ServiceRequestStatusDTO(){
-
+    public ServiceRequestStatusDTO() {
     }
-    public String getStatus(){
+
+    public RequestStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(RequestStatus status) {
         this.status = status;
     }
-
 }

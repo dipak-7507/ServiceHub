@@ -1,7 +1,8 @@
 package com.servicehub.controller;
 
 import com.servicehub.dto.BookingDTO;
-import com.servicehub.entity.Booking;
+import com.servicehub.dto.BookingResponseDTO;
+import com.servicehub.entity.BookingStatus;
 import com.servicehub.service.BookingService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -19,21 +20,23 @@ public class BookingController {
     }
 
     @PostMapping
-    public Booking saveBooking(
+    public BookingResponseDTO saveBooking(
             @Valid @RequestBody BookingDTO bookingDTO) {
-        return bookingService.saveBooking(bookingDTO);
+        return BookingResponseDTO.from(bookingService.saveBooking(bookingDTO));
     }
 
     @GetMapping("/{id}")
-    public Booking getBookingById(@PathVariable Long id) {
-        return bookingService.getBookingById(id);
+    public BookingResponseDTO getBookingById(@PathVariable Long id) {
+        return BookingResponseDTO.from(bookingService.getBookingById(id));
     }
 
+    /** Example: PUT /bookings/5/status?status=CONFIRMED */
     @PutMapping("/{id}/status")
-    public Booking updateBookingStatus(
+    public BookingResponseDTO updateBookingStatus(
             @PathVariable Long id,
-            @RequestParam String status) {
-        return bookingService.updateBookingStatus(id, status);
+            @RequestParam BookingStatus status) {
+        return BookingResponseDTO.from(
+                bookingService.updateBookingStatus(id, status));
     }
 
     @DeleteMapping("/{id}")
@@ -43,14 +46,18 @@ public class BookingController {
     }
 
     @GetMapping("/customer/{customerId}")
-    public List<Booking> getBookingsByCustomer(
+    public List<BookingResponseDTO> getBookingsByCustomer(
             @PathVariable Long customerId) {
-        return bookingService.getBookingsByCustomer(customerId);
+        return bookingService.getBookingsByCustomer(customerId).stream()
+                .map(BookingResponseDTO::from)
+                .toList();
     }
 
     @GetMapping("/provider/{providerId}")
-    public List<Booking> getBookingsByProvider(
+    public List<BookingResponseDTO> getBookingsByProvider(
             @PathVariable Long providerId) {
-        return bookingService.getBookingByProvider(providerId);
+        return bookingService.getBookingByProvider(providerId).stream()
+                .map(BookingResponseDTO::from)
+                .toList();
     }
 }
